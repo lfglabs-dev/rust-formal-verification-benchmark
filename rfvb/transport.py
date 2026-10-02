@@ -19,6 +19,7 @@ class ChatConfig:
     retries: int = 6
     backoff: float = 5.0
     extra_body: dict | None = None
+    stream: bool = False  # SSE streaming: keeps proxies with idle timeouts (e.g. 100 s) from cutting long generations
 
 
 class TransportError(RuntimeError):
@@ -34,6 +35,9 @@ def chat(cfg: ChatConfig, messages: list[dict], tools: list[dict] | None = None)
         body["tool_choice"] = "auto"
     if cfg.extra_body:
         body.update(cfg.extra_body)
+    if cfg.stream:
+        body["stream"] = True
+        body["stream_options"] = {"include_usage": True}
     data = json.dumps(body).encode("utf-8")
     headers = {"Content-Type": "application/json", "User-Agent": "rfvb/1.0"}
     if cfg.api_key:
@@ -44,6 +48,8 @@ def chat(cfg: ChatConfig, messages: list[dict], tools: list[dict] | None = None)
         req = urllib.request.Request(url, data=data, headers=headers, method="POST")
         try:
             with urllib.request.urlopen(req, timeout=cfg.timeout) as resp:
+                if cfg.stream:
+                    return _read_stream(resp)
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:2000]
@@ -58,3 +64,45 @@ def chat(cfg: ChatConfig, messages: list[dict], tools: list[dict] | None = None)
             last = f"{type(exc).__name__}: {exc}"
         time.sleep(cfg.backoff * (2 ** attempt))
     raise TransportError(f"request failed after {cfg.retries + 1} attempts: {last}")
+
+
+def _read_stream(resp) -> dict:
+    """Assemble an SSE chat-completions stream into a non-streaming response dict."""
+    content, reasoning, calls, usage, finish, model = [], [], {}, None, None, None
+    for raw in resp:
+        line = raw.decode("utf-8", "replace").strip()
+        if not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if payload == "[DONE]":
+            break
+        chunk = json.loads(payload)
+        model = chunk.get("model") or model
+        if chunk.get("usage"):
+            usage = chunk["usage"]
+        for ch in chunk.get("choices") or []:
+            d = ch.get("delta") or {}
+            if d.get("content"):
+                content.append(d["content"])
+            r = d.get("reasoning_content") or d.get("reasoning")
+            if isinstance(r, str) and r:
+                reasoning.append(r)
+            for tc in d.get("tool_calls") or []:
+                slot = calls.setdefault(tc.get("index", 0), {"id": None, "type": "function", "function": {"name": "", "arguments": ""}})
+                if tc.get("id"):
+                    slot["id"] = tc["id"]
+                f = tc.get("function") or {}
+                if f.get("name"):
+                    slot["function"]["name"] += f["name"]
+                if f.get("arguments"):
+                    slot["function"]["arguments"] += f["arguments"]
+            if ch.get("finish_reason"):
+                finish = ch["finish_reason"]
+    if finish is None and not content and not calls:
+        raise json.JSONDecodeError("stream ended without a completion", "", 0)
+    msg = {"role": "assistant", "content": "".join(content) or None}
+    if reasoning:
+        msg["reasoning_content"] = "".join(reasoning)
+    if calls:
+        msg["tool_calls"] = [calls[i] for i in sorted(calls)]
+    return {"model": model, "choices": [{"index": 0, "message": msg, "finish_reason": finish}], "usage": usage}
