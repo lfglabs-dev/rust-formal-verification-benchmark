@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rfvb"
+version = "1.0.0"
+description = "Rust Formal Verification Benchmark: verifier and reference agent runner"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+dependencies = []  # standard library only
+
+[tool.setuptools]
+packages = ["rfvb"]
+
+[tool.setuptools.package-data]
+rfvb = ["prompts/*.md"]
