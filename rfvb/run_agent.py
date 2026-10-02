@@ -2,7 +2,7 @@
 
   python -m rfvb.run_agent --model MODEL --base-url URL --tasks SELECTOR [options]
 
-SELECTOR: comma-separated task ids, `all`, `train`, `eval`, `easy`/`medium`/`hard`,
+SELECTOR: comma-separated task ids, `all`, `easy`/`medium`/`hard`,
 or a file with one task id per line. The API key is read from the environment
 variable named by --api-key-env (default OPENAI_API_KEY).
 
@@ -66,7 +66,7 @@ def run_one(task: Task, run_dir: Path, cfg: ChatConfig, budget_name: str, *, moc
     ver = verify_task(task, art / "final.lean")
     (art / "verifier.json").write_text(json.dumps(ver.to_json(), indent=2) + "\n")
     row = {
-        "task_id": task.id, "split": task.split, "difficulty": task.difficulty,
+        "task_id": task.id, "difficulty": task.difficulty,
         "property_class": task.property_class, "category": task.category,
         "model": "mock" if mock else cfg.model, "budget": budget_name,
         "pass": ver.passed, "verifier_status": ver.status, "verifier_detail": ver.detail[:2000],
@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             row = run_one(task, run_dir, cfg, args.budget, mock=args.mock, keep_ws=args.keep_workspaces)
         except Exception as exc:  # harness failure: record and keep going
-            row = {"task_id": task.id, "split": task.split, "difficulty": task.difficulty, "model": model,
+            row = {"task_id": task.id, "difficulty": task.difficulty, "model": model,
                    "pass": False, "verifier_status": "harness_error", "verifier_detail": repr(exc)}
         with lock:
             rows.append(row)

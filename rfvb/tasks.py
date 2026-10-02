@@ -19,7 +19,6 @@ HEADER_OPENS = (
 @dataclass(frozen=True)
 class Task:
     id: str  # <project>/<case>/<task>
-    split: str  # train | eval
     difficulty: str
     property_class: str
     category: str
@@ -45,7 +44,7 @@ class Task:
     @classmethod
     def from_row(cls, row: dict) -> "Task":
         return cls(
-            id=row["id"], split=row["split"], difficulty=row["difficulty"],
+            id=row["id"], difficulty=row["difficulty"],
             property_class=row["property_class"], category=row["category"],
             theorem_name=row["theorem_name"], theorem_statement=row["theorem_statement"],
             namespace=row["namespace"], opens=tuple(row.get("opens") or ()),
@@ -61,7 +60,7 @@ def load_tasks(path: Path = TASKS_FILE) -> list[Task]:
 
 
 def select_tasks(spec: str | None = None, path: Path = TASKS_FILE) -> list[Task]:
-    """Select tasks by a comma-separated list of task ids, `all`, `train`, `eval`,
+    """Select tasks by a comma-separated list of task ids, `all`,
     `easy`/`medium`/`hard`, or a path to a file with one task id per line."""
     tasks = load_tasks(path)
     if not spec or spec == "all":
@@ -76,8 +75,6 @@ def select_tasks(spec: str | None = None, path: Path = TASKS_FILE) -> list[Task]
     for w in wanted:
         if w in by_id:
             out.append(by_id[w])
-        elif w in ("train", "eval"):
-            out.extend(t for t in tasks if t.split == w)
         elif w in ("easy", "medium", "hard"):
             out.extend(t for t in tasks if t.difficulty == w)
         else:

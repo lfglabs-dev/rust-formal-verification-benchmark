@@ -6,13 +6,11 @@ open-source Rust crate. The crate code was translated mechanically to Lean by
 `cargo hax into lean` (Charon + Aeneas); the specification restates the
 property test over the extracted functions; the model must prove it.
 
-| | easy | medium | hard | total |
-|---|---|---|---|---|
-| train | 15 | 34 | 27 | 76 |
-| eval  | 6  | 13 | 5  | 24 |
+| easy | medium | hard | total |
+|---|---|---|---|
+| 21 | 47 | 32 | 100 |
 
-38 extracted cases from 33 upstream projects. Splits assign whole families of
-related projects (e.g. all bigint crates) to one side.
+38 extracted cases from 33 upstream projects. All 100 tasks form a single test set.
 
 ## What a task is
 
@@ -29,8 +27,7 @@ A task (one line of `tasks.jsonl`) fixes:
 The solver submits a complete replacement for the editable file. Helper lemmas are
 allowed; the statement, name and namespace must stay unchanged.
 
-Key fields of `tasks.jsonl`: `id` (`<project>/<case>/<task>`), `split`
-(`train`/`eval`), `difficulty`, `property_class`, `category`, `theorem_name`,
+Key fields of `tasks.jsonl`: `id` (`<project>/<case>/<task>`), `difficulty`, `property_class`, `category`, `theorem_name`,
 `theorem_statement`, `namespace`, `opens`, `specs_module`, `specs_file`,
 `editable_file`, `target_module`, `reference_file`, `reference_module`,
 `implementation_files`, `rust_dir`, `pbt` (framework, test, source file/lines,
@@ -55,7 +52,7 @@ permalink, strategies, assertion) and `upstream` (repo, commit, license, crate).
 4. **Axioms**: `#print axioms` of that check is a subset of
    `{propext, Classical.choice, Quot.sound}`.
 
-Score = number of tasks passed (pass@1 unless stated otherwise). Report train and eval separately.
+Score = number of tasks passed out of 100 (pass@1 unless stated otherwise), also reported by difficulty.
 
 ## Layout
 
@@ -115,11 +112,11 @@ visible. The final editable file is then graded by the independent verifier.
 
 ```sh
 export OPENAI_API_KEY=...
-python -m rfvb.run_agent --model MODEL --base-url https://host/v1 --tasks eval --jobs 2
+python -m rfvb.run_agent --model MODEL --base-url https://host/v1 --tasks all --jobs 2
 python -m rfvb.run_agent --mock --tasks easy        # no model: submits reference proofs (smoke test)
 ```
 
-`--tasks`: comma-separated ids, `all`, `train`, `eval`, `easy`/`medium`/`hard`, or a file
+`--tasks`: comma-separated ids, `all`, `easy`/`medium`/`hard`, or a file
 of ids. `--budget quick|normal|deep|extended` (default `normal`: 10 submissions, 80 tool
 calls, 50 turns, 400k completion tokens). `--api-key-env` selects the key variable.
 Reasoning content returned by the endpoint is kept in the conversation history.
