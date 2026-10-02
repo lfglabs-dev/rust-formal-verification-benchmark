@@ -1,132 +1,102 @@
 # Rust Formal Verification Benchmark (RFVB)
 
-100 Lean 4 theorem-proving tasks about real Rust code. Each task is the formal
-version of a property-based test (proptest / quickcheck / ...) taken from an
-open-source Rust crate. The crate code was translated mechanically to Lean by
-`cargo hax into lean` (Charon + Aeneas); the specification restates the
-property test over the extracted functions; the model must prove it.
+**v1.0, 2026-10-02.** 100 Lean 4 theorem-proving tasks about real Rust code.
 
-| easy | medium | hard | total |
-|---|---|---|---|
-| 21 | 47 | 32 | 100 |
+## Construction
 
-38 extracted cases from 33 upstream projects. All 100 tasks form a single test set.
+1. **Sources.** We mined 186 open-source Rust repositories that use property-based
+   testing (8,087 tests), then analysed 96 of them in depth (7,245 tests).
+2. **Specifications.** Each task is one of the crate authors' own property-based
+   tests (proptest: 69 tasks, quickcheck: 31). It is restated in Lean with fixed
+   rules: generator bounds become hypotheses, `prop_assume!` becomes a
+   precondition, and the assertion becomes the conclusion. Rust semantics are
+   kept: overflow and panics fail, and `Option`/`Result` are preserved.
+3. **Implementation model.** The code under test is translated to Lean
+   mechanically by `cargo hax into lean` (Charon + Aeneas). The output is used
+   verbatim and never edited by hand.
+4. **Filtering.** A test becomes a task only if extraction succeeds, the
+   statement is non-trivial and non-vacuous, and a reference proof exists. Every
+   task's statement was reviewed against the original test.
 
-## What a task is
+The result is 100 tasks from 33 crates (38 extracted modules); 1.4% of the
+analysed tests became tasks. Most losses happen at extraction: unsupported Rust
+features, `unsafe`, floats and large dependency cones.
 
-A task (one line of `tasks.jsonl`) fixes:
+| | |
+|---|---|
+| Difficulty | easy 21, medium 47, hard 32 |
+| Property class | reference equivalence 33, round trip 25, algebraic law 18, parse/serialize 7, container invariant 5, model equivalence 4, Option/Result behaviour 4, bounds 4 |
+| Domains | integer and big-number arithmetic, encodings, bit manipulation, checksums, finite fields, parsers, containers, search |
+| Licenses | MIT, Apache-2.0, Unlicense or CC0 (per task in `tasks.jsonl`) |
 
-- **implementation**: verbatim extracted Lean under `extracted/<Package>/` (not editable);
-- **specification**: `Benchmark/Cases/<Project>/<Case>/Specs.lean`, a `<name>_spec`
-  predicate stating the property test, typically `f x ⦃ r => P r ⦄`
-  ("`f x` returns `ok r` without panicking and `P r` holds");
-- **editable file**: `Benchmark/Generated/<Project>/<Case>/Tasks/<Name>.lean`, containing
-  exactly one theorem whose proof is the placeholder `exact ?_`;
-- **target theorem**: `theorem_name` / `theorem_statement`.
+All 100 tasks form a single test set. Every task has a reference proof in the
+repository, so results on models trained after 2026-10-02 may be contaminated.
 
-The solver submits a complete replacement for the editable file. Helper lemmas are
-allowed; the statement, name and namespace must stay unchanged.
+## Task
 
-Key fields of `tasks.jsonl`: `id` (`<project>/<case>/<task>`), `difficulty`, `property_class`, `category`, `theorem_name`,
-`theorem_statement`, `namespace`, `opens`, `specs_module`, `specs_file`,
-`editable_file`, `target_module`, `reference_file`, `reference_module`,
-`implementation_files`, `rust_dir`, `pbt` (framework, test, source file/lines,
-permalink, strategies, assertion) and `upstream` (repo, commit, license, crate).
+The implementation (`extracted/`) and the specification
+(`Benchmark/Cases/<P>/<C>/Specs.lean`) are fixed. The model submits a
+replacement for one editable file containing the target theorem. Helper
+lemmas are allowed. Specifications are typically `f x ⦃ r => P r ⦄`: `f x`
+returns without panicking and its result satisfies `P`.
+
+`tasks.jsonl` has one task per line: `id`, `difficulty`, `property_class`,
+`theorem_name`, `theorem_statement`, file paths, the original test (`pbt`:
+framework, source lines, permalink, generators, assertion) and `upstream`
+(repo, commit, license).
 
 ## Grading
 
-`rfvb.verify` accepts a submission only if all of the following hold:
+`python -m rfvb.verify <task_id> <file.lean>` passes a submission iff:
 
-1. **Static policy**: imports limited to the case `Specs` module and
-   `Mathlib`/`Aeneas`/`CoreModels`/`Hax`/`Std`/`Batteries`/`Aesop`/`Qq`/`Plausible`/`Init`;
-   no `sorry`, `admit`, `axiom`, `native_decide`, `ofReduceBool`, `implemented_by`,
-   `extern`, `unsafe`, `run_cmd`/`run_elab`/`run_meta`, `initialize`, `#eval`, `#exit`,
-   syntax extensions (`macro`, `syntax`, `notation`, `elab`, `infix`, ...),
-   `set_option debug.*`/`backward.*`, instance-attribute removal; the theorem is declared
-   exactly once with the exact statement text (whitespace-normalised) inside the task namespace.
-2. **Build**: in a fresh copy of the pristine benchmark with only the editable file
-   overlaid, `lake build <target_module>` succeeds.
-3. **Statement check**: a separate module, which never sees the submission's source,
-   states the canonical statement and proves it with `@<theorem_name>`; so the
-   submitted theorem must have exactly the canonical type.
-4. **Axioms**: `#print axioms` of that check is a subset of
-   `{propext, Classical.choice, Quot.sound}`.
+1. **Policy.** No `sorry`, `admit`, `axiom`, `native_decide`, `implemented_by`,
+   `extern`, `unsafe`, `#eval`, syntax extensions or debug options; imports
+   limited to the case specification and standard libraries; theorem statement
+   unchanged.
+2. **Build.** It compiles and is kernel-checked against a pristine copy of the
+   implementation and specification.
+3. **Statement.** A separate module restates the canonical theorem and accepts
+   the submitted proof.
+4. **Axioms.** Only `propext`, `Classical.choice` and `Quot.sound` are used.
 
-Score = number of tasks passed out of 100 (pass@1 unless stated otherwise), also reported by difficulty.
+The score is the number of tasks passed out of 100 (pass@k), reported by
+difficulty. All 100 reference proofs pass; all 100 blank task files fail.
+Verification takes 19 s at the median and 148 s at most, using 0.6 GiB at the
+median and 2 GiB at most.
+
+## Usage
+
+Requires elan, git and Python ≥ 3.10 (standard library only).
+
+```sh
+lake exe cache get && lake build                     # implementation, specs, reference proofs
+python -m rfvb.verify <task_id> proof.lean           # JSON verdict; exit code 0 iff passed
+python -m rfvb.check_references --jobs 4             # all reference proofs (expect 100/100)
+python -m rfvb.run_agent --model M --base-url URL --api-key-env VAR --tasks all
+```
+
+`run_agent` is a reference tool-calling agent (OpenAI-compatible API). Its
+tools are file reading, search, Lean elaboration and proof checking. Each task
+runs in an isolated workspace without reference proofs. Results are written to
+`results/<run>.jsonl`.
 
 ## Layout
 
 ```
-lakefile.lean, lake-manifest.json, lean-toolchain   Lean 4 v4.31.0; aeneas build-183e4f0, hax-lean v0.3.27 (+ Mathlib)
-toolchain.json                                     extraction toolchain pins (cargo-hax 0.4.1, Charon, Aeneas)
-tasks.jsonl                                        the 100 tasks
-extracted/<Package>/                               verbatim cargo-hax output, one Lean package per case
+tasks.jsonl                                        100 tasks
+extracted/<Package>/                               cargo-hax output (verbatim)
 Benchmark/Cases/<Project>/<Case>/Specs.lean        specifications
-Benchmark/Cases/<Project>/<Case>/Proofs/*.lean     reference proofs (one per task)
-Benchmark/Generated/<Project>/<Case>/Tasks/*.lean  blank editable task files
-rust/<project>/<case>/                             original Rust sources at the pinned commit (+ licenses)
-rfvb/                                              Python: task loader, verifier, reference agent
+Benchmark/Cases/<Project>/<Case>/Proofs/           reference proofs
+Benchmark/Generated/<Project>/<Case>/Tasks/        blank task files
+rust/<project>/<case>/                             Rust sources at the pinned commit, with licenses
+rfvb/                                              verifier, task loader, reference agent
 ```
 
-## Build
+Pins: Lean v4.31.0, Mathlib, Aeneas `build-183e4f0`, hax-lean v0.3.27, cargo-hax 0.4.1
+(`lean-toolchain`, `lake-manifest.json`, `toolchain.json`).
 
-Requires [elan](https://github.com/leanprover/elan), git, Python >= 3.10 (standard library only).
+## License
 
-```sh
-lake exe cache get   # prebuilt Mathlib oleans (otherwise Mathlib builds from source)
-lake build           # extraction + specs + all 100 reference proofs
-```
-
-The default target does not include the blank task files (they contain `?_`).
-Elaborating some files needs several GB of RAM; use `RFVB_LEAN_MEMORY_BYTES`
-(default 16 GiB, 0 = off) to cap a verifier/agent Lean process group.
-
-## Verify a proof
-
-```sh
-python -m rfvb.verify arxid/permute/output_never_leaves_the_domain my_proof.lean
-# {"task_id": "...", "pass": true, "status": "passed", "detail": "", "axioms": ["propext", ...], ...}
-```
-
-Exit code 0 iff passed. Other statuses: `forbidden_placeholder`, `hidden_import`,
-`theorem_missing`, `theorem_statement_mismatch`, `lean_check_failed`, `timeout`,
-`untrusted_axioms`, `verifier_infra_error`, `harness_error`.
-The verifier needs a built checkout (`lake build`): it copies the case's prebuilt
-oleans into a temporary directory.
-
-Check all reference proofs / blank skeletons:
-
-```sh
-python -m rfvb.check_references --jobs 4              # expect 100/100 passing
-python -m rfvb.check_references --jobs 4 --skeletons  # expect 100/100 rejected
-```
-
-## Run a model
-
-The reference agent is an OpenAI-compatible tool-calling loop with tools
-`show_task`, `read_file`, `search` (workspace, Aeneas, CoreModels, Mathlib, Lean core),
-`run_lean` (exploration, `sorry` allowed) and `check_proof` (metered submission).
-Each task runs in an isolated workspace holding only that case's extraction, specs,
-editable file, Rust sources and a briefing (`TASK.md`); reference proofs are not
-visible. The final editable file is then graded by the independent verifier.
-
-```sh
-export OPENAI_API_KEY=...
-python -m rfvb.run_agent --model MODEL --base-url https://host/v1 --tasks all --jobs 2
-python -m rfvb.run_agent --mock --tasks easy        # no model: submits reference proofs (smoke test)
-```
-
-`--tasks`: comma-separated ids, `all`, `easy`/`medium`/`hard`, or a file
-of ids. `--budget quick|normal|deep|extended` (default `normal`: 10 submissions, 80 tool
-calls, 50 turns, 400k completion tokens). `--api-key-env` selects the key variable.
-Reasoning content returned by the endpoint is kept in the conversation history.
-Results: `results/<run>.jsonl` (one line per task) and per-task logs in `results/<run>/`.
-
-## Licenses
-
-Benchmark code, specifications, task files and reference proofs: Apache-2.0 (`LICENSE`).
-Rust sources under `rust/` and the Lean code extracted from them under `extracted/`
-keep their upstream licenses (per-task `upstream.license` in `tasks.jsonl`; license files
-are included in each `rust/<project>/<case>/`). `rev_bits` declares Apache-2.0 in its
-`Cargo.toml` but ships no license file; a copy of the license text was added as
-`rust/rev_bits/u32/LICENSE-APACHE`.
+Benchmark code, specifications, task files and proofs: Apache-2.0. Files under
+`rust/` and `extracted/` keep their upstream licenses. `rev_bits` declares
+Apache-2.0 but ships no license file, so we added `rust/rev_bits/u32/LICENSE-APACHE`.
