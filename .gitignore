@@ -3,4 +3,6 @@ __pycache__/
 *.pyc
 *.egg-info/
 .env
-results/
+results/*
+!results/20261002-*-normal.jsonl
+!results/20261002-*-normal.tar.zst

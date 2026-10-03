@@ -64,6 +64,33 @@ difficulty. All 100 reference proofs pass; all 100 blank task files fail.
 Verification takes 19 s at the median and 148 s at most, using 0.6 GiB at the
 median and 2 GiB at most.
 
+## Results
+
+Reference agent (`rfvb.run_agent`), one attempt per task, `normal` budget (50
+turns, 80 tool calls, 10 proof submissions). Provider-default temperature,
+streamed responses, run on 2026-10-03.
+
+| model | solved | easy (21) | medium (47) | hard (32) | prompt tokens | completion tokens | median time / task |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| GLM 5.3 | **46** | 19 | 27 | 0 | 164M | 12.1M | 32 min |
+| GLM 5.3 Flash | **32** | 16 | 16 | 0 | 158M | 16.4M | 56 min |
+
+No model proves any hard task. Kimi K3 was not evaluated: its provider stayed
+in rate-limit cooldown, and the 3 completed attempts are kept for reference
+only. Attempts lost to provider errors were rerun and are not counted as
+failures.
+
+`results/<run>.jsonl` has one line per attempt: verdict, axioms, agent
+termination, turns, tool calls, token usage and time. The last valid line per
+task counts. `results/<run>.tar.zst` holds the per-task logs: full
+conversation including provider reasoning, tool calls, submitted proofs, final
+file and verifier output. Absolute host paths in tool outputs are replaced by
+`<repo>`.
+
+```sh
+python -m rfvb.summarize results/<run>.jsonl
+```
+
 ## Usage
 
 Requires elan, git and Python ≥ 3.10 (standard library only).
