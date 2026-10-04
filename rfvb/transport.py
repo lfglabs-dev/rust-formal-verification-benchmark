@@ -91,6 +91,9 @@ def _read_stream(resp) -> dict:
                 slot = calls.setdefault(tc.get("index", 0), {"id": None, "type": "function", "function": {"name": "", "arguments": ""}})
                 if tc.get("id"):
                     slot["id"] = tc["id"]
+                for key, val in tc.items():  # provider extensions, e.g. Gemini's extra_content.google.thought_signature
+                    if key not in ("index", "id", "type", "function") and val is not None:
+                        slot[key] = val
                 f = tc.get("function") or {}
                 if f.get("name"):
                     slot["function"]["name"] += f["name"]
