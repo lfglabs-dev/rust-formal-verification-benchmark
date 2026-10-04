@@ -6,3 +6,5 @@ __pycache__/
 results/*
 !results/20261002-*-normal.jsonl
 !results/20261002-*-normal.tar.zst
+!results/20261004-*-normal.jsonl
+!results/20261004-*-normal.tar.zst

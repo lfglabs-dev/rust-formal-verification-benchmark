@@ -68,14 +68,16 @@ median and 2 GiB at most.
 
 Reference agent (`rfvb.run_agent`), one attempt per task, `normal` budget (50
 turns, 80 tool calls, 10 proof submissions). Provider-default temperature,
-streamed responses, run on 2026-10-03.
+streamed responses. GLM runs on 2026-10-03, Gemini on 2026-10-04.
 
 | model | solved | easy (21) | medium (47) | hard (32) | prompt tokens | completion tokens | median time / task |
 |---|---:|---:|---:|---:|---:|---:|---:|
+| Gemini 4 Argon (early access) | **87** | 21 | 45 | 21 | 88M | 2.3M | 6 min |
 | GLM 5.3 | **46** | 19 | 27 | 0 | 164M | 12.1M | 32 min |
 | GLM 5.3 Flash | **32** | 16 | 16 | 0 | 158M | 16.4M | 56 min |
 
-No model proves any hard task. Kimi K3 was not evaluated: its provider stayed
+Gemini 4 Argon (`gemini-4-argon-eap`, early-access build, Gemini API) is the
+only model that proves hard tasks (21/32). Kimi K3 was not evaluated: its provider stayed
 in rate-limit cooldown, and the 3 completed attempts are kept for reference
 only. Attempts lost to provider errors were rerun and are not counted as
 failures.
