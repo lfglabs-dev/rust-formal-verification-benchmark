@@ -88,7 +88,12 @@ def _read_stream(resp) -> dict:
             if isinstance(r, str) and r:
                 reasoning.append(r)
             for tc in d.get("tool_calls") or []:
-                slot = calls.setdefault(tc.get("index", 0), {"id": None, "type": "function", "function": {"name": "", "arguments": ""}})
+                idx = tc.get("index")
+                if idx is None:  # e.g. Gemini: whole calls without an index; a new id starts a new call
+                    idx = next((i for i, c in calls.items() if tc.get("id") and c["id"] == tc.get("id")), None)
+                    if idx is None:
+                        idx = len(calls) if (tc.get("id") or not calls) else max(calls)
+                slot = calls.setdefault(idx, {"id": None, "type": "function", "function": {"name": "", "arguments": ""}})
                 if tc.get("id"):
                     slot["id"] = tc["id"]
                 for key, val in tc.items():  # provider extensions, e.g. Gemini's extra_content.google.thought_signature
