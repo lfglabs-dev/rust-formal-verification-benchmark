@@ -1,6 +1,6 @@
 # Rust Formal Verification Benchmark (RFVB)
 
-**v1.0** — 100 Lean 4 theorem-proving tasks extracted from real-world Rust property-based tests.
+**v1.0, 2026-10-02.** 100 Lean 4 theorem-proving tasks extracted from real-world Rust property-based tests.
 
 ## Overview
 
