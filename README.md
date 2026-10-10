@@ -13,7 +13,7 @@ Each task translates an existing `proptest` (69) or `quickcheck` (31) property t
 
 ## Results
 
-Evaluated with the reference tool-calling agent (`rfvb.run_agent`), one pass per task under the `normal` budget (50 turns, 80 tool calls, 10 `check_proof` submissions, streamed responses, provider-default temperature).
+Evaluated with the reference tool-calling agent (`rfvb.run_agent`), one pass per task under the `normal` budget (50 turns, 80 tool calls, 10 `check_proof` submissions, streamed responses, `tool_choice="auto"`, provider-default temperature).
 
 | Model | Provider ID | Solved | Easy (21) | Medium (47) | Hard (32) | Valid | Prompt Tokens | Completion Tokens | Median Time |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -23,12 +23,14 @@ Evaluated with the reference tool-calling agent (`rfvb.run_agent`), one pass per
 | Z.ai GLM 5.3 | `zai/glm-5.3` | **46**/100 | 19 | 27 | 0 | 100 | 164M | 12.1M | 32 min |
 | Z.ai GLM 5.3 Flash | `zai/glm-5.3-flash` | **32**/100 | 16 | 16 | 0 | 100 | 158M | 16.4M | 56 min |
 | Grok 4.7 | `xai/grok-4.7` | **22**/100 | 13 | 9 | 0 | 100 | 176M | 2.3M | 32 min |
-| Muse Spark 1.3 | `muse/muse-spark-1.3` | **13**/100 | 10 | 3 | 0 | 94 | 176M | 5.2M | 31 min |
+| Muse Spark 1.3 (Combined) | `muse/muse-spark-1.3` + `muse-code/muse-spark-1.3` | **16**/100 | 13 | 3 | 0 | 97 | 180M | 5.4M | 30 min |
+| ↳ Muse Spark 1.3 (Initial) | `muse/muse-spark-1.3` | **13**/100 | 10 | 3 | 0 | 94 | 176M | 5.2M | 31 min |
+| ↳ Muse Spark 1.3 (Subscription continuation) | `muse-code/muse-spark-1.3` | **3**/100 | 3 | 0 | 0 | 3 | 4M | 0.2M | 6 min |
 | GPT-6 Luna | `openai/gpt-6-luna` | **5**/100 | 4 | 1 | 0 | 100 | 107M | 0.4M | 26 min |
 
 *Notes:*
+- **Muse Spark 1.3 routing:** The initial `20261009-muse_muse-spark-1.3-normal` run completed 94/100 tasks (**13** solved). Following the transition to the Muse Code subscription route (`muse-code/muse-spark-1.3` only, with `tool_choice="auto"` and no paid fallback), the 6 unfinished tasks were continued in a separately labelled run (`20261010-muse-code_muse-spark-1.3-normal`), solving **3** additional tasks (**16/100** combined across 97 valid tasks) before the subscription route entered `HTTP 429` rate-limit cooldown on the last 3 tasks.
 - **Kimi K3 256K (`kimi/k3-256k`):** Not scored; its native provider remained in rate-limit cooldown / HTTP 502 (the 3 completed attempts in `results/20261002-kimi_k3-normal.jsonl` are kept for reference).
-- **Muse Spark 1.3 (`muse/muse-spark-1.3`):** 94/100 tasks completed before upstream HTTP 502 errors interrupted the remaining 6 tasks.
 - Per-task verdicts and token usage are stored in `results/<run>.jsonl`, with full conversations, tool logs, and submitted proofs archived in `results/<run>.tar.zst`.
 
 ```sh
