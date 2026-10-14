@@ -19,6 +19,7 @@ Evaluated with the reference tool-calling agent (`rfvb.run_agent`), one pass per
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | Gemini 4 Argon | `google/gemini-4-argon-eap` | **87**/100 | 21 | 45 | 21 | 100 | 88M | 2.3M | 6 min |
 | Claude Opus 5.5 | `anthropic/claude-opus-5-5` | **84**/100 | 21 | 45 | 18 | 100 | 103M | 3.9M | 18 min |
+| GPT-6 Astra | `openai/gpt-6-astra` | **75**/100 | 21 | 42 | 12 | 100 | 67M | 0.9M | 10 min |
 | GPT-6.1 Sol | `openai/gpt-6.1-sol` | **75**/100 | 21 | 42 | 12 | 100 | 79M | 1.1M | 20 min |
 | Z.ai GLM 5.3 | `zai/glm-5.3` | **46**/100 | 19 | 27 | 0 | 100 | 164M | 12.1M | 32 min |
 | Z.ai GLM 5.3 Flash | `zai/glm-5.3-flash` | **32**/100 | 16 | 16 | 0 | 100 | 158M | 16.4M | 56 min |
