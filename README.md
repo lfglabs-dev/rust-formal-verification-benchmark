@@ -13,6 +13,8 @@ Each task translates an existing `proptest` (69) or `quickcheck` (31) property t
 
 ## Results
 
+**Task-set version:** all results below were scored on the v1.0 statements. In v1.1, `rust_crdt/dot/prop_ordered_dot_is_ordered_by_actor_first` was corrected to call `Ord::cmp`, as the Rust test does, instead of `partial_cmp`. Every listed system had solved the v1.0 version of that task, and none of those proofs verify against the corrected statement. Re-scoring without a re-run would therefore subtract one solve from every row and leave the ordering unchanged.
+
 Evaluated with the reference tool-calling agent (`rfvb.run_agent`), one pass per task under the `normal` budget (50 turns, 80 tool calls, 10 `check_proof` submissions, streamed responses, `tool_choice="auto"`, provider-default temperature).
 
 | Model | Provider ID | Solved | Easy (21) | Medium (47) | Hard (32) | Valid | Prompt Tokens | Completion Tokens | Median Time |
@@ -48,7 +50,7 @@ python -m rfvb.summarize results/*.jsonl
 
 Submissions are built in a Landlock sandbox: writes are confined to the verification directory, and there is no network access.
 
-**Known issue (open):** an independent audit (2026-10-14) found that the axiom check alone does not guarantee kernel checking, because code that runs at elaboration time can add declarations that the kernel never checks. Until the verifier replays the submitted module through the kernel (`leanchecker`, shipped with the toolchain), treat passes as provisional. The audit replayed all 367 archived v1.0 passes through `leanchecker` and found every one kernel-clean. It found no evidence that any v1.0 result exploited the issue. Results added after 2026-10-14 have not been replayed.
+**Known issue (open):** an independent audit (2026-10-14) found that the axiom check alone does not guarantee kernel checking, because code that runs at elaboration time can add declarations that the kernel never checks. Until the verifier replays the submitted module through the kernel (`leanchecker`, shipped with the toolchain), treat passes as provisional. The audit replayed all 367 archived v1.0 passes through `leanchecker` and found every one kernel-clean. It found no evidence that any v1.0 result exploited the issue. The later GPT-6 Astra and Muse Wonder 1.0 runs were replayed the same way: 26/26 Muse Wonder passes and 74/75 GPT-6 Astra passes are kernel-clean. The remaining Astra pass targets the original `rust_crdt` statement (see below) and does not verify against the corrected one.
 
 **Statistics:** each model is evaluated in a single run. Per the audit, the top two v1.0 rows (87 and 84) are not statistically distinguishable (exact McNemar test, p = 0.45). Results in rows produced before v1.1 do not record the run configuration (temperature, endpoint, `max_tokens`).
 
