@@ -27,7 +27,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import ROOT
+from . import ROOT, __version__
 from .agent import BUDGETS, Runner
 from .tasks import Task, select_tasks
 from .transport import ChatConfig
@@ -69,6 +69,8 @@ def run_one(task: Task, run_dir: Path, cfg: ChatConfig, budget_name: str, *, moc
         "task_id": task.id, "difficulty": task.difficulty,
         "property_class": task.property_class, "category": task.category,
         "model": "mock" if mock else cfg.model, "budget": budget_name,
+        "config": {"base_url": cfg.base_url, "temperature": cfg.temperature, "max_tokens": cfg.max_tokens,
+                   "stream": cfg.stream, "request_timeout": cfg.timeout, "rfvb_version": __version__},
         "pass": ver.passed, "verifier_status": ver.status, "verifier_detail": ver.detail[:2000],
         "axioms": ver.axioms,
         "agent": asdict(result) | {"final_candidate": None},

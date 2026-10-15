@@ -46,6 +46,14 @@ python -m rfvb.summarize results/*.jsonl
 2. **Build & Check:** Compiles in a clean copy of the benchmark and matches the canonical theorem type in a separate check module.
 3. **Axioms:** Depends only on `propext`, `Classical.choice`, and `Quot.sound`.
 
+Submissions are built in a Landlock sandbox: writes are confined to the verification directory, and there is no network access.
+
+**Known issue (open):** an independent audit (2026-10-14) found that the axiom check alone does not guarantee kernel checking, because code that runs at elaboration time can add declarations that the kernel never checks. Until the verifier replays the submitted module through the kernel (`leanchecker`, shipped with the toolchain), treat passes as provisional. The audit replayed all 367 archived v1.0 passes through `leanchecker` and found every one kernel-clean. It found no evidence that any v1.0 result exploited the issue. Results added after 2026-10-14 have not been replayed.
+
+**Statistics:** each model is evaluated in a single run. Per the audit, the top two v1.0 rows (87 and 84) are not statistically distinguishable (exact McNemar test, p = 0.45). Results in rows produced before v1.1 do not record the run configuration (temperature, endpoint, `max_tokens`).
+
+**Harness note:** before v1.1, `run_lean` checked for the text `declaration uses 'sorry'`, but Lean 4.31 prints `` declaration uses `sorry` ``. As a result, it reported some sorry-containing files as clean. All results committed before v1.1 were produced with that harness.
+
 ## Usage
 
 Requires `elan`, `git`, and Python ≥ 3.10.
