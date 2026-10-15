@@ -20,7 +20,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import ROOT
+from . import ROOT, sandbox
 from .limits import lake_command, run_limited
 from .policy import policy_failure, split_statement
 from .tasks import Task, opens_block
@@ -55,9 +55,10 @@ def sha256_text(text: str) -> str:
 
 
 def run(cmd: list[str], cwd: Path, timeout: int) -> tuple[int, str]:
+    """Run a command in `cwd`; Lake commands run in the sandbox, writable only in `cwd`."""
     gated = False
     if cmd and cmd[0] == "lake":
-        cmd, gated = lake_command(cmd[1:])
+        cmd, gated = lake_command(cmd[1:], prefix=sandbox.wrap([], [cwd]))
     code, out = run_limited(cmd, cwd, timeout, gated=gated)
     return code, (out + "\ntimeout" if code == 124 else out)
 
