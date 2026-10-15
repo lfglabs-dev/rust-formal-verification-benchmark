@@ -127,6 +127,10 @@ def truncate(text: str, limit: int) -> str:
     return f"{head}\n... [{len(text) - limit} chars elided] ...\n{tail}"
 
 
+# Lean 4 reports `declaration uses `sorry`` (backticks); older releases used quotes.
+SORRY_RE = re.compile(r"declaration uses [`']sorry")
+
+
 def classify_lean_output(code: int, out: str) -> str:
     if code == 124:
         return "lean_timeout"
@@ -237,7 +241,7 @@ class Runner:
         scratch.write_text(text, encoding="utf-8")
         code, out = run_lean_file(self.ws, self.scratch_rel, self.budget.lean_timeout)
         out = out.replace(self.scratch_rel, "EditableFile.lean").strip()
-        clean = code == 0 and not re.search(r"\berror\b", out) and "declaration uses 'sorry'" not in out
+        clean = code == 0 and not re.search(r"\berror\b", out) and not SORRY_RE.search(out)
         note = ("\n[harness note] This file elaborated without errors or sorry. run_lean is not graded: "
                 "submit it with check_proof.") if clean else ""
         return (out or "no messages (file elaborated without errors or warnings)") + f"\n[exit {code}]" + note
@@ -253,7 +257,7 @@ class Runner:
         self.editable.write_text(text, encoding="utf-8")
         code, out = run_lean_file(self.ws, self.task.editable_file, self.budget.lean_timeout)
         errors = code != 0 or re.search(r"\berror\b", out)
-        if not errors and "declaration uses 'sorry'" not in out:
+        if not errors and not SORRY_RE.search(out):
             self.res.status = "solved"
             self.res.final_candidate = text
             return "ACCEPTED by the local check. The run ends; the independent verifier will now re-check it."
