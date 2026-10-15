@@ -13,8 +13,8 @@ with the test closure `|&e| e % 2 == 0`. In the extraction a closure argument
 is a value `pred : P` together with an `Fn P u32 Bool` instance record; the
 test's closure is not part of the library, so every theorem quantifies over
 *any* instance satisfying `IsEvenPredicate` below, which states exactly what the
-test closure computes (in particular the closure itself satisfies it; see
-`cases/partition/slice_partition/review/NonVacuity.lean`). The `&mut [T]`
+test closure computes (in particular the closure itself satisfies it: see `isEvenPredicate_nonvacuous`
+below). The `&mut [T]`
 argument is threaded functionally: `partition_index` returns the index and the
 final contents of the slice; `partition` returns the two sub-slices (and a
 write-back function that the tests never use).
@@ -38,6 +38,18 @@ open partition
 divisor) and returns whether `e` is even. -/
 def IsEvenPredicate {P : Type} (inst : core.ops.function.Fn P Std.U32 Bool) (pred : P) : Prop :=
   ∀ e : Std.U32, inst.call pred e = ok (decide (e.val % 2 = 0))
+
+/-- The test closure `|&e| e % 2 == 0` as an extracted `Fn` record (used only
+to show that `IsEvenPredicate` is satisfiable). -/
+def isEvenClosure : core.ops.function.Fn Unit Std.U32 Bool :=
+  let f : Unit → Std.U32 → RustM Bool := fun _ e => ok (decide (e.val % 2 = 0))
+  { FnMutInst := { FnOnceInst := { call_once := f },
+                   call_mut := fun s e => do let b ← f s e; ok (b, s) },
+    call := f }
+
+/-- Non-vacuity: the hypothesis `IsEvenPredicate` of every task in this case is
+satisfiable, by the test's own closure. -/
+theorem isEvenPredicate_nonvacuous : IsEvenPredicate isEvenClosure () := fun _ => rfl
 
 /-- The tests' `v.sort()` on a `Vec<u32>`: the list sorted in ascending order
 (`List.mergeSort` with `≤` on the values; a sorted permutation of a list of

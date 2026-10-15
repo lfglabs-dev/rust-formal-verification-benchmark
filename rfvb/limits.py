@@ -50,17 +50,20 @@ def _real_lake() -> str | None:
     return None
 
 
-def lake_command(args: list[str]) -> tuple[list[str], bool]:
+def lake_command(args: list[str], prefix: list[str] | None = None) -> tuple[list[str], bool]:
     """Command running `lake <args>`, and whether it first waits for a host Lean slot.
 
-    Only `lake env lean …` is routed through `lean-slot` (mirroring the host's
-    own policy); other Lake commands run as usual."""
+    `prefix` (e.g. the `rfvb.sandbox` wrapper) is placed directly in front of
+    `lake`, inside any slot gate. Only `lake env lean …` is routed through
+    `lean-slot` (mirroring the host's own policy); other Lake commands run as usual."""
+    prefix = list(prefix or [])
     gate = shutil.which("lean-slot")
     real = _real_lake()
     if gate and real and args[:2] == ["env", "lean"]:
         script = f'printf "%s\\n" "{SLOT_MARKER}"; exec "$0" "$@"'
-        return [gate, "sh", "-c", script, real, *args], True
-    return ["lake", *args], False
+        inner = [*prefix, real, *args]
+        return [gate, "sh", "-c", script, *inner], True
+    return [*prefix, "lake", *args], False
 
 
 def group_rss(pgid: int) -> int:
