@@ -53,8 +53,9 @@ def prop_partial_order_spec (a b : dot.Dot Std.U8) : Prop :=
 
 /-- PBT `crdts::dot::test::prop_ordered_dot_is_ordered_by_actor_first`
 (src/dot.rs:180): converting two `Dot`s to `OrdDot` and comparing, the actor
-comparison decides the order, and on equal actors the `OrdDot` order agrees
-with the counter order. -/
+comparison decides the order (`<`/`>` are `PartialOrd::lt`/`gt`), and on equal
+actors `ord_dot_a.cmp(&ord_dot_b)` (the derived `Ord::cmp` of `OrdDot`, as in
+the test) agrees with the counter order. (v1.1: v1.0 used `partial_cmp` here.) -/
 def prop_ordered_dot_is_ordered_by_actor_first_spec (a b : dot.Dot Std.U8) :
     Prop :=
   (do
@@ -70,13 +71,8 @@ def prop_ordered_dot_is_ordered_by_actor_first_spec (a b : dot.Dot Std.U8) :
         core.cmp.PartialOrd.gt.default ord_inst.PartialOrdInst oa ob
     | core.cmp.Ordering.Equal => do
       let counter_cmp ← core.U64.Insts.CoreCmpOrd.cmp oa.counter ob.counter
-      let full_cmp ← core.cmp.PartialOrd.partial_cmp
-        ord_inst.PartialOrdInst oa ob
-      let some_full <-
-        match full_cmp with
-        | core.option.Option.Some o => ok o
-        | core.option.Option.None => .fail .panic
-      core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq counter_cmp some_full)
+      let full_cmp ← ord_inst.cmp oa ob
+      core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq counter_cmp full_cmp)
     ⦃ eq => eq = true ⦄
 
 end Benchmark.Cases.RustCrdt.Dot

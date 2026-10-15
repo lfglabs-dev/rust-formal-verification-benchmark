@@ -31,8 +31,8 @@ theorem u64_partial_cmp (x y : Std.U64) :
 
 /-- PBT `crdts::dot::test::prop_ordered_dot_is_ordered_by_actor_first`
 (src/dot.rs:180): converting two `Dot`s to `OrdDot` and comparing, the actor
-comparison decides the order, and on equal actors the `OrdDot` order agrees
-with the counter order. -/
+comparison decides the order, and on equal actors the `OrdDot` order
+(`Ord::cmp`) agrees with the counter order. -/
 theorem prop_ordered_dot_is_ordered_by_actor_first (a b : dot.Dot Std.U8) :
     prop_ordered_dot_is_ordered_by_actor_first_spec a b := by
   unfold prop_ordered_dot_is_ordered_by_actor_first_spec
@@ -47,21 +47,21 @@ theorem prop_ordered_dot_is_ordered_by_actor_first (a b : dot.Dot Std.U8) :
     rcases Nat.lt_trichotomy a.counter.val b.counter.val with h2 | h2 | h2
     · have cc1 : compare a.counter.val b.counter.val = .lt := Nat.compare_eq_lt.mpr h2
       simp only [c1, cc1, u64_ord_cmp, bind_tc_ok,
-        dot.OrdDot.Insts.CoreCmpPartialOrdOrdDot.partial_cmp,
+        dot.OrdDot.Insts.CoreCmpOrd, dot.OrdDot.Insts.CoreCmpOrd.cmp,
         core.U8.Insts.CoreCmpOrd, core.mkUOrd, core.mkUPartialOrd, bind_tc_ok,
-        u64_partial_cmp, core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq]
+        core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq]
       exact (spec_ok _).mp rfl
     · have cc1 : compare a.counter.val b.counter.val = .eq := Nat.compare_eq_eq.mpr h2
       simp only [c1, cc1, u64_ord_cmp, bind_tc_ok,
-        dot.OrdDot.Insts.CoreCmpPartialOrdOrdDot.partial_cmp,
+        dot.OrdDot.Insts.CoreCmpOrd, dot.OrdDot.Insts.CoreCmpOrd.cmp,
         core.U8.Insts.CoreCmpOrd, core.mkUOrd, core.mkUPartialOrd, bind_tc_ok,
-        u64_partial_cmp, core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq]
+        core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq]
       exact (spec_ok _).mp rfl
     · have cc1 : compare a.counter.val b.counter.val = .gt := Nat.compare_eq_gt.mpr h2
       simp only [c1, cc1, u64_ord_cmp, bind_tc_ok,
-        dot.OrdDot.Insts.CoreCmpPartialOrdOrdDot.partial_cmp,
+        dot.OrdDot.Insts.CoreCmpOrd, dot.OrdDot.Insts.CoreCmpOrd.cmp,
         core.U8.Insts.CoreCmpOrd, core.mkUOrd, core.mkUPartialOrd, bind_tc_ok,
-        u64_partial_cmp, core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq]
+        core.cmp.Ordering.Insts.CoreCmpPartialEqOrdering.eq]
       exact (spec_ok _).mp rfl
   · have c1 : compare a.actor.val b.actor.val = .gt :=
       Nat.compare_eq_gt.mpr h

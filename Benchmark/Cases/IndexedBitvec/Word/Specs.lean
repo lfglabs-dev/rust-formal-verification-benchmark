@@ -20,8 +20,10 @@ payload (`word.Word := Std.U64`). Bits of a `Word` are indexed MSB-first:
 loops range over `0..64`.
 
 The quickcheck generators (`impl Arbitrary for Word` = `u64::arbitrary(g).into()`,
-`u16`/`usize`/`u64` arbitrary) produce every value of the type, so the only
-theorem hypotheses are the explicit proptest ranges.
+`u16`/`usize`/`u64` arbitrary) come from quickcheck 0.9, whose unsigned
+`arbitrary` draws from `0..size` (default size 100), so the tests only exercise
+small values. The theorems quantify over every value of the type (they are
+stronger than the tests); the only hypotheses are the explicit proptest ranges.
 -/
 
 open CoreModels Aeneas Aeneas.Std.WP

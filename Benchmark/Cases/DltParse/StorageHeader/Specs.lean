@@ -17,8 +17,8 @@ is the configuration `cargo test` runs the original property tests under.
 Byte arrays: Aeneas models `[u8; N]` as `Std.Array Std.U8 N` (a subtype of
 `List Std.U8`), so the specifications compare the returned array against the
 expected `List Std.U8` built from `Std.core.num.U32.to_le_bytes` (Aeneas' pure
-little-endian encoding; `CoreModels`' monadic `core.num.U32.to_le_bytes` is
-proven equal to it by `to_le_bytes_eq` below, following the Byteorder case).
+little-endian encoding; the reference proof relates it to `CoreModels`' monadic
+`core.num.U32.to_le_bytes`, following the Byteorder case).
 -/
 
 open CoreModels Aeneas Aeneas.Std.WP
