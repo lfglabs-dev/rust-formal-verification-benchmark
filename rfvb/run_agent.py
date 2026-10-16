@@ -95,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--max-tokens", type=int, default=16384, help="max completion tokens per request")
     ap.add_argument("--request-timeout", type=int, default=900)
     ap.add_argument("--stream", action="store_true", help="stream responses (avoids proxy idle timeouts on long generations)")
+    ap.add_argument("--no-echo-reasoning", action="store_true", help="do not send earlier reasoning back (needed for Mistral)")
     ap.add_argument("--mock", action="store_true", help="no model: submit the reference proof (pipeline smoke test)")
     ap.add_argument("--keep-workspaces", action="store_true")
     args = ap.parse_args(argv)
@@ -109,7 +110,7 @@ def main(argv: list[str] | None = None) -> int:
     out_path = results / f"{run}.jsonl"
     cfg = ChatConfig(base_url=args.base_url or "mock://", model=model, api_key=os.environ.get(args.api_key_env),
                      temperature=args.temperature, max_tokens=args.max_tokens, timeout=args.request_timeout,
-                     stream=args.stream)
+                     stream=args.stream, echo_reasoning=not args.no_echo_reasoning)
     lock = threading.Lock()
     rows: list[dict] = []
 

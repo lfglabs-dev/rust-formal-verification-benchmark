@@ -20,6 +20,7 @@ class ChatConfig:
     backoff: float = 5.0
     extra_body: dict | None = None
     stream: bool = False  # SSE streaming: keeps proxies with idle timeouts (e.g. 100 s) from cutting long generations
+    echo_reasoning: bool = True  # send earlier reasoning_content back; Mistral rejects the field (HTTP 400/502)
 
 
 class TransportError(RuntimeError):
@@ -27,6 +28,8 @@ class TransportError(RuntimeError):
 
 
 def chat(cfg: ChatConfig, messages: list[dict], tools: list[dict] | None = None) -> dict:
+    if not cfg.echo_reasoning:
+        messages = [{k: v for k, v in m.items() if k != "reasoning_content"} for m in messages]
     body = {"model": cfg.model, "messages": messages, "max_tokens": cfg.max_tokens}
     if cfg.temperature is not None:
         body["temperature"] = cfg.temperature
