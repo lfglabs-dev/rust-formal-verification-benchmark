@@ -66,6 +66,20 @@ def chat(cfg: ChatConfig, messages: list[dict], tools: list[dict] | None = None)
     raise TransportError(f"request failed after {cfg.retries + 1} attempts: {last}")
 
 
+def _chunk_text(part: object) -> str:
+    """Text of a typed content chunk, e.g. {"type": "thinking", "thinking": [{"type": "text", "text": ...}]}."""
+    if not isinstance(part, dict):
+        return ""
+    if isinstance(part.get("text"), str):
+        return part["text"]
+    inner = part.get(part.get("type") or "")
+    if isinstance(inner, str):
+        return inner
+    if isinstance(inner, list):
+        return "".join(_chunk_text(x) for x in inner)
+    return ""
+
+
 def _read_stream(resp) -> dict:
     """Assemble an SSE chat-completions stream into a non-streaming response dict."""
     content, reasoning, calls, usage, finish, model = [], [], {}, None, None, None
@@ -82,8 +96,14 @@ def _read_stream(resp) -> dict:
             usage = chunk["usage"]
         for ch in chunk.get("choices") or []:
             d = ch.get("delta") or {}
-            if d.get("content"):
-                content.append(d["content"])
+            c = d.get("content")
+            if isinstance(c, str) and c:
+                content.append(c)
+            elif isinstance(c, list):  # Mistral reasoning models: typed chunks
+                for part in c:
+                    text = _chunk_text(part)
+                    if text:
+                        (reasoning if part.get("type") == "thinking" else content).append(text)
             r = d.get("reasoning_content") or d.get("reasoning")
             if isinstance(r, str) and r:
                 reasoning.append(r)
